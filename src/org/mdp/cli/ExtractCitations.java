@@ -95,21 +95,23 @@ public class ExtractCitations {
 		 * assuming the data starts at the line with "#indexXXXX" and ends
 		 * at the line with "#!"  */
 		while((line = br.readLine()) != null){
-			linesRead++;
-			if(linesRead % TICKS == 0){
-				System.err.println(linesRead + "lines read");
+			if(++linesRead % TICKS == 0){
+				System.err.println(linesRead + " lines read");
 			}
 			if(!line.startsWith("#index")){
 				continue;
 			}
 			int citerPaperIndex = Integer.parseInt(line.substring("#index".length()));
-			while(!(line = br.readLine()).equals("#!")){
+			while((line = br.readLine()).startsWith("#%")){
+				if(++linesRead % TICKS == 0){
+					System.err.println(linesRead + "lines read ...");
+				}
 				try{
 					int citedPaperIndex = Integer.parseInt(line.substring("#%".length()));
 					pw.println(citerPaperIndex + "\t" + citedPaperIndex);
 					linesWritten++;
 				}catch(NumberFormatException e){
-					/*If the line doesn't contain an index, skip it*/
+					/*Some of the papers don't contain citation data, if so skip it*/
 				}
 			}
 		}

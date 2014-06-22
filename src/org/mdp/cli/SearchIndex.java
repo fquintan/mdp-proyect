@@ -27,7 +27,7 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
-import org.mdp.cli.IndexTitleAndAbstract.FieldNames;
+import org.mdp.cli.IndexTitleAndAuthor.FieldNames;
 
 /**
  * Main method to search articles using Lucene.
@@ -39,7 +39,8 @@ public class SearchIndex {
 	public static final HashMap<String,Float> BOOSTS = new HashMap<String,Float>();
 	static {
 		BOOSTS.put(FieldNames.ABSTRACT.name(), 1f); //<- default
-		BOOSTS.put(FieldNames.TITLE.name(), 5f); 
+		BOOSTS.put(FieldNames.TITLE.name(), 5f);
+		BOOSTS.put(FieldNames.AUTHOR.name(), 5f); 
 	}
 
 	public static final int DOCS_PER_PAGE  = 10;
@@ -84,9 +85,13 @@ public class SearchIndex {
 		Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_48);
 		
 		MultiFieldQueryParser queryParser = new MultiFieldQueryParser(Version.LUCENE_48,
-				new String[] {FieldNames.ABSTRACT.name(), FieldNames.TITLE.name()},
+				new String[] {FieldNames.ABSTRACT.name(),
+							  FieldNames.TITLE.name(),
+							  FieldNames.AUTHOR.name()
+							  },
 				analyzer,
 				BOOSTS);
+		queryParser.setDefaultOperator(queryParser.OR_OPERATOR);
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
 		
 		try {
@@ -104,9 +109,10 @@ public class SearchIndex {
 							Document doc = searcher.doc(hits[i].doc);
 							String title = doc.get(FieldNames.TITLE.name());
 							String abst = doc.get(FieldNames.ABSTRACT.name());
-							String url = doc.get(FieldNames.URL.name());
+							String author = doc.get(FieldNames.AUTHOR.name());
+							String index = doc.get(FieldNames.INDEX.name());
 							System.out.println((i+1) + "\t" + title + 
-									"\t" + url +
+									"\t" + author +
 									"\t" + hits[i].score +
 									"\t" + abst);
 						}

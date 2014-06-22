@@ -152,16 +152,16 @@ public class BoostRanks {
 				System.err.println(read + " docs read");
 			}
 			Document doc = reader.document(i);
-			IndexableField urlF = doc.getField(IndexTitleAndAbstract.FieldNames.URL.name());
+			IndexableField urlF = doc.getField(IndexTitleAndAuthor.FieldNames.INDEX.name());
 			String url = urlF.stringValue();
 			Double rankD = ranks.get(url);
 			rankD = (rankD == null) ? 0D : rankD;
 			
 			float boost = getBoost(rankD);
-			IndexableField title = doc.getField(IndexTitleAndAbstract.FieldNames.TITLE.name());
+			IndexableField title = doc.getField(IndexTitleAndAuthor.FieldNames.TITLE.name());
 			((Field) title).setBoost(boost);
 			
-			Term urlT = new Term(IndexTitleAndAbstract.FieldNames.URL.name());
+			Term urlT = new Term(IndexTitleAndAuthor.FieldNames.INDEX.name());
 			writer.updateDocument(urlT, doc);
 		}
 		System.err.println("Finished reading "+read+" docs");

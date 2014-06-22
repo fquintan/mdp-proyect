@@ -38,10 +38,10 @@ import org.apache.lucene.util.Version;
  * 
  * @author Aidan
  */
-public class IndexTitleAndAbstract {
+public class IndexTitleAndAuthor {
 
 	public enum FieldNames {
-		URL, TITLE, MODIFIED, ABSTRACT
+		ABSTRACT, AUTHOR, INDEX, MODIFIED, TITLE 
 	}
 
 	public static int TICKS = 10000;
@@ -84,9 +84,6 @@ public class IndexTitleAndAbstract {
 			return;
 		}
 
-
-		
-		
 		String dir = cmd.getOptionValue("o");
 		System.err.println("Opening directory at  "+dir);
 		File fDir = new File(dir);
@@ -108,13 +105,13 @@ public class IndexTitleAndAbstract {
 		}
 		BufferedReader br = new BufferedReader(new InputStreamReader(is,StandardCharsets.UTF_8));
 
-		indexTitleAndAbstract(br, fDir);
+		indexTitleAndAuthor(br, fDir);
 
 		br.close();
 	}
 
-	public static void indexTitleAndAbstract(BufferedReader input, File indexDir) throws IOException{
-		//TODO Implement following the board :)
+	public static void indexTitleAndAuthor(BufferedReader input, File indexDir) throws IOException{
+		/*Lucene bureaucracy*/
 		Directory dir = FSDirectory.open(indexDir);
 		Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_48);
 		IndexWriterConfig iwc = new IndexWriterConfig(Version.LUCENE_48, analyzer);
@@ -123,33 +120,75 @@ public class IndexTitleAndAbstract {
 		
 		String line = null;
 		int read = 0;
+		int author = 0;
+		String  titleLine = "#*",
+				authorLine = "#@",
+				yearLine = "#t",
+				publicationLine = "#c",
+				indexLine = "#index",
+				citationLine = "#%",
+				abstractLine = "#!";
+				
+		/*
+		 * Now the good part, we're reading the text file, identifying the 
+		 * relevant data within it and indexing it as Lucene documents, 
+		 * we assume the following structure for the text file:
+		 * #* --- paperTitle
+		 * #@ --- Authors (Separated by commas)
+		 * #t ---- Year
+		 * #c  --- publication venue
+		 * #index---- index id of this paper
+		 * #% ---- the id of references of this paper (there are multiple lines, with each indicating a reference)
+		 * #! --- Abstract
+		 * */
 		while ((line = input.readLine()) != null) {
+			
 			read++;
+			String print = "";
 			if (read % TICKS == 0) {
 				System.err.println(read + " lines read");
 			}
 			line = line.trim();
-			if (!line.isEmpty()) {
-				String[] tabs = line.split("\t");
-				if(tabs.length < 2){
-					continue;
-				}
+			if(line.startsWith(titleLine)){
 				Document doc = new Document();
-				Field url = new StringField(FieldNames.URL.name(), tabs[0], Field.Store.YES);
-				doc.add(url);
-				Field title = new TextField(FieldNames.TITLE.name(), tabs[1], Field.Store.YES);
-				doc.add(title);
-				if (tabs.length > 2) {
-					Field abst = new TextField(FieldNames.ABSTRACT.name(), tabs[2], Field.Store.YES);
-					doc.add(abst);
+				String title = line.substring(titleLine.length());
+				Field titleField = new TextField(FieldNames.TITLE.name(), title, Field.Store.YES);
+				doc.add(titleField);
+				print += "t:"+title;
+				if((line = input.readLine()).startsWith(authorLine)){
+					author++;
+//					String[] authors = line.trim().substring(authorLine.length()).split(",");
+					String authors = line.trim().substring(authorLine.length()).replaceAll(",", " ");
+					Field authorField = new TextField(FieldNames.AUTHOR.name(), authors, Field.Store.YES);
+					doc.add(authorField);
+					print += "a:"+authors;
+				}
+				if((line = input.readLine()).startsWith(yearLine)){}
+				if((line = input.readLine()).startsWith(publicationLine)){}
+				if((line = input.readLine()).startsWith(indexLine)){
+					String index = line.trim().substring(indexLine.length());
+					Field indexField= new StringField(FieldNames.INDEX.name(), index, Field.Store.YES);
+					doc.add(indexField);
+				}
+				while((line = input.readLine()).startsWith(citationLine)){}
+				if((line = input.readLine()).startsWith(abstractLine)){
+					String absString = line.trim().substring(abstractLine.length());
+					if(!absString.isEmpty()){
+						Field abstractField = new StringField(FieldNames.ABSTRACT.name(), absString, Field.Store.YES);
+						doc.add(abstractField);
+					}
 				}
 				Field modified = new LongField(FieldNames.MODIFIED.name(), System.currentTimeMillis(), Field.Store.NO);
 				doc.add(modified);
 				writer.addDocument(doc);
+				if (read % TICKS == 0) {
+					System.err.println(print);
+				}
 			}
 		}
 		
 		writer.close();
 		System.err.println("Finished reading");
+		System.out.println(author);
 	}
 }
