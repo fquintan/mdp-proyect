@@ -138,9 +138,9 @@ public class BoostRanks {
 			line = line.trim();
 			if(!line.isEmpty()){
 				String[] tabs = line.split("\t");
-				String url = tabs[0];
+				String paperIndex = tabs[0];
 				double rank = Double.parseDouble(tabs[1]);
-				ranks.put(url, rank);
+				ranks.put(paperIndex, rank);
 			}
 		}
 		System.err.println("Finished reading "+read+" lines");
@@ -152,17 +152,20 @@ public class BoostRanks {
 				System.err.println(read + " docs read");
 			}
 			Document doc = reader.document(i);
-			IndexableField urlF = doc.getField(IndexTitleAndAuthor.FieldNames.INDEX.name());
-			String url = urlF.stringValue();
-			Double rankD = ranks.get(url);
-			rankD = (rankD == null) ? 0D : rankD;
-			
-			float boost = getBoost(rankD);
-			IndexableField title = doc.getField(IndexTitleAndAuthor.FieldNames.TITLE.name());
-			((Field) title).setBoost(boost);
-			
-			Term urlT = new Term(IndexTitleAndAuthor.FieldNames.INDEX.name());
-			writer.updateDocument(urlT, doc);
+			IndexableField indexF = doc.getField(IndexTitleAndAuthor.FieldNames.INDEX.name());
+			if(indexF != null){
+
+				String paperIndex = indexF.stringValue();
+				Double rankD = ranks.get(paperIndex);
+				rankD = (rankD == null) ? 0D : rankD;
+
+				float boost = getBoost(rankD);
+				IndexableField title = doc.getField(IndexTitleAndAuthor.FieldNames.TITLE.name());
+				((Field) title).setBoost(boost);
+
+				Term indexT = new Term(IndexTitleAndAuthor.FieldNames.INDEX.name());
+				writer.updateDocument(indexT, doc);
+			}
 		}
 		System.err.println("Finished reading "+read+" docs");
 		writer.close();

@@ -40,7 +40,9 @@ public class SearchIndex {
 	static {
 		BOOSTS.put(FieldNames.ABSTRACT.name(), 1f); //<- default
 		BOOSTS.put(FieldNames.TITLE.name(), 5f);
-		BOOSTS.put(FieldNames.AUTHOR.name(), 5f); 
+		BOOSTS.put(FieldNames.AUTHOR.name(), 5f);
+		BOOSTS.put(FieldNames.INDEX.name(), 1f);
+		BOOSTS.put(FieldNames.YEAR.name(), 1f); 
 	}
 
 	public static final int DOCS_PER_PAGE  = 10;
@@ -85,7 +87,7 @@ public class SearchIndex {
 		Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_48);
 		
 		MultiFieldQueryParser queryParser = new MultiFieldQueryParser(Version.LUCENE_48,
-				new String[] {FieldNames.ABSTRACT.name(),
+				new String[] {//FieldNames.ABSTRACT.name(),
 							  FieldNames.TITLE.name(),
 							  FieldNames.AUTHOR.name()
 							  },
@@ -111,9 +113,12 @@ public class SearchIndex {
 							String abst = doc.get(FieldNames.ABSTRACT.name());
 							String author = doc.get(FieldNames.AUTHOR.name());
 							String index = doc.get(FieldNames.INDEX.name());
-							System.out.println((i+1) + "\t" + title + 
-									"\t" + author +
-									"\t" + hits[i].score +
+							String year = doc.get(FieldNames.YEAR.name());
+							System.out.println((i+1) + "\ttitle:" + title + 
+									"\tauthor:" + author + 
+//									"\t" + hits[i].score +
+									"\tindex:" + index +
+									"\tyear:"+ year +
 									"\t" + abst);
 						}
 					}

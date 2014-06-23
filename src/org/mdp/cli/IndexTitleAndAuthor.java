@@ -41,7 +41,7 @@ import org.apache.lucene.util.Version;
 public class IndexTitleAndAuthor {
 
 	public enum FieldNames {
-		ABSTRACT, AUTHOR, INDEX, MODIFIED, TITLE 
+		ABSTRACT, AUTHOR, INDEX, MODIFIED, TITLE, YEAR
 	}
 
 	public static int TICKS = 10000;
@@ -121,13 +121,13 @@ public class IndexTitleAndAuthor {
 		String line = null;
 		int read = 0;
 		int author = 0;
-		String  titleLine = "#*",
-				authorLine = "#@",
-				yearLine = "#t",
-				publicationLine = "#c",
-				indexLine = "#index",
-				citationLine = "#%",
-				abstractLine = "#!";
+		String  titlePrefix = "#*",
+				authorPrefix = "#@",
+				yearPrefix = "#t",
+				publicationPrefix = "#c",
+				indexPrefix = "#index",
+				citationPrefix = "#%",
+				abstractPrefix = "#!";
 				
 		/*
 		 * Now the good part, we're reading the text file, identifying the 
@@ -144,51 +144,60 @@ public class IndexTitleAndAuthor {
 		while ((line = input.readLine()) != null) {
 			
 			read++;
-			String print = "";
 			if (read % TICKS == 0) {
 				System.err.println(read + " lines read");
 			}
 			line = line.trim();
-			if(line.startsWith(titleLine)){
+			if(line.startsWith(titlePrefix)){
 				Document doc = new Document();
-				String title = line.substring(titleLine.length());
+				String title = line.substring(titlePrefix.length());
 				Field titleField = new TextField(FieldNames.TITLE.name(), title, Field.Store.YES);
 				doc.add(titleField);
-				print += "t:"+title;
-				if((line = input.readLine()).startsWith(authorLine)){
+				if((line = input.readLine()).startsWith(authorPrefix)){
+					if(line.equals("#@Peter Dayan,Geoffrey E. Hinton,Radford M. Neal,Richard S. Zemel")){
+						author++;
+					}
 					author++;
 //					String[] authors = line.trim().substring(authorLine.length()).split(",");
-					String authors = line.trim().substring(authorLine.length()).replaceAll(",", " ");
+					String authors = line.trim().substring(authorPrefix.length()).replaceAll(",", " ");
+					authors = (authors.equals("")) ? "NULL" : authors;
 					Field authorField = new TextField(FieldNames.AUTHOR.name(), authors, Field.Store.YES);
 					doc.add(authorField);
-					print += "a:"+authors;
 				}
-				if((line = input.readLine()).startsWith(yearLine)){}
-				if((line = input.readLine()).startsWith(publicationLine)){}
-				if((line = input.readLine()).startsWith(indexLine)){
-					String index = line.trim().substring(indexLine.length());
+				read++;
+				if((line = input.readLine()).startsWith(yearPrefix)){
+					String year = line.substring(yearPrefix.length());
+					Field yearField = new StringField(FieldNames.YEAR.name(), year, Field.Store.YES);
+					doc.add(yearField);
+				}
+				read++;
+				if((line = input.readLine()).startsWith(publicationPrefix)){}
+				read++;
+				if((line = input.readLine()).startsWith(indexPrefix)){
+					String index = line.trim().substring(indexPrefix.length());
 					Field indexField= new StringField(FieldNames.INDEX.name(), index, Field.Store.YES);
 					doc.add(indexField);
 				}
-				while((line = input.readLine()).startsWith(citationLine)){}
-				if((line = input.readLine()).startsWith(abstractLine)){
-					String absString = line.trim().substring(abstractLine.length());
+				read++;
+				while((line = input.readLine()).startsWith(citationPrefix)){
+					read++;}
+				read++;
+				if((line = input.readLine()).startsWith(abstractPrefix)){
+					String absString = line.trim().substring(abstractPrefix.length());
 					if(!absString.isEmpty()){
 						Field abstractField = new StringField(FieldNames.ABSTRACT.name(), absString, Field.Store.YES);
 						doc.add(abstractField);
 					}
 				}
+				read++;
 				Field modified = new LongField(FieldNames.MODIFIED.name(), System.currentTimeMillis(), Field.Store.NO);
 				doc.add(modified);
 				writer.addDocument(doc);
-				if (read % TICKS == 0) {
-					System.err.println(print);
-				}
 			}
 		}
 		
 		writer.close();
 		System.err.println("Finished reading");
-		System.out.println(author);
+		System.out.println("Read "+ read + " lines");
 	}
 }
